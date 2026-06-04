@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# symlinks / generated dirs in project root
+/data_indices
+/outputs
+/checkpoints
+/logs
+/datasets
+
+# data and large artifacts
+*.hdf5
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.onnx
+*.rknn
+
+# generated evaluation artifacts
+*.csv
+*.jsonl
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+*.html
+
+.DS_Store
