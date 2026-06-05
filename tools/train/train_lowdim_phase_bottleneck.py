@@ -1,3 +1,12 @@
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve()
+for parent in PROJECT_ROOT.parents:
+    if (parent / "phase_belief").is_dir():
+        sys.path.insert(0, str(parent))
+        break
+
 import argparse
 import json
 import math

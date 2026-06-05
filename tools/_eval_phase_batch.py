@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 import torch
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from phase_belief.models.phase_belief_bottleneck_gru import PhaseBeliefBottleneckGRU
