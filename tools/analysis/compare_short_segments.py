@@ -7,8 +7,10 @@ from statistics import mean, median
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--full", type=str, required=True)
-    parser.add_argument("--acb", type=str, required=True)
+    parser.add_argument("--segments-a", type=str, required=True)
+    parser.add_argument("--name-a", type=str, required=True)
+    parser.add_argument("--segments-b", type=str, required=True)
+    parser.add_argument("--name-b", type=str, required=True)
     parser.add_argument("--out-dir", type=str, required=True)
     parser.add_argument("--thresholds", type=int, nargs="+", default=[1, 2, 3, 5])
     return parser.parse_args()
@@ -132,23 +134,23 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    full_rows = load_jsonl(args.full)
-    acb_rows = load_jsonl(args.acb)
+    rows_a = load_jsonl(args.segments_a)
+    rows_b = load_jsonl(args.segments_b)
 
-    full_summary, full_per_demo = summarize_one("full", full_rows, args.thresholds)
-    acb_summary, acb_per_demo = summarize_one("action_conf_balance", acb_rows, args.thresholds)
+    summary_a, per_demo_a = summarize_one(args.name_a, rows_a, args.thresholds)
+    summary_b, per_demo_b = summarize_one(args.name_b, rows_b, args.thresholds)
 
-    full_task = summarize_by_task("full", full_rows, args.thresholds)
-    acb_task = summarize_by_task("action_conf_balance", acb_rows, args.thresholds)
+    task_a = summarize_by_task(args.name_a, rows_a, args.thresholds)
+    task_b = summarize_by_task(args.name_b, rows_b, args.thresholds)
 
-    summary_rows = [full_summary, acb_summary]
+    summary_rows = [summary_a, summary_b]
 
     with open(out_dir / "short_segment_summary.json", "w") as f:
         json.dump(summary_rows, f, indent=2)
 
     write_csv(out_dir / "short_segment_summary.csv", summary_rows)
-    write_csv(out_dir / "short_segment_per_demo.csv", full_per_demo + acb_per_demo)
-    write_csv(out_dir / "short_segment_by_task.csv", full_task + acb_task)
+    write_csv(out_dir / "short_segment_per_demo.csv", per_demo_a + per_demo_b)
+    write_csv(out_dir / "short_segment_by_task.csv", task_a + task_b)
 
     print("Done.")
     print("outputs:")

@@ -31,3 +31,18 @@ __pycache__/
 *.html
 
 .DS_Store
+
+# generated / large files
+data_indices/
+checkpoints/
+outputs/
+logs/
+*.pt
+*.pth
+*.ckpt
+*.hdf5
+*.mp4
+*.npz
+*.npy
+__pycache__/
+*.pyc

@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import time
 
 PROJECT_ROOT = Path(__file__).resolve()
 for parent in PROJECT_ROOT.parents:
@@ -75,6 +76,17 @@ def confidence_loss_fn(phase_probs, eps=1e-8):
     entropy = -(phase_probs * torch.log(phase_probs + eps)).sum(dim=-1)
     return entropy.mean()
 
+def format_time(seconds):
+    seconds = int(max(seconds, 0))
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+
+    if h > 0:
+        return f"{h:d}h {m:02d}m {s:02d}s"
+    if m > 0:
+        return f"{m:d}m {s:02d}s"
+    return f"{s:d}s"
 
 def collect_phase_metrics(phase_probs):
     with torch.no_grad():
@@ -219,24 +231,68 @@ def main():
     with open(save_dir / "config.json", "w") as f:
         json.dump(save_args, f, indent=2)
 
+    # log_path = save_dir / "train_log.jsonl"
+    # best_val = math.inf
+
+    # for epoch in range(1, args.epochs + 1):
+    #     train_metrics = run_one_epoch(model, train_loader, optimizer, device, args, train=True)
+    #     val_metrics = run_one_epoch(model, val_loader, optimizer, device, args, train=False)
     log_path = save_dir / "train_log.jsonl"
     best_val = math.inf
-
+    
+    train_start_time = time.time()
+    epoch_times = []
+    
     for epoch in range(1, args.epochs + 1):
+        epoch_start_time = time.time()
+    
         train_metrics = run_one_epoch(model, train_loader, optimizer, device, args, train=True)
         val_metrics = run_one_epoch(model, val_loader, optimizer, device, args, train=False)
-
+    
+        epoch_time = time.time() - epoch_start_time
+        epoch_times.append(epoch_time)
+    
+        avg_epoch_time = sum(epoch_times) / len(epoch_times)
+        epochs_left = args.epochs - epoch
+        eta_seconds = avg_epoch_time * epochs_left
+        elapsed_seconds = time.time() - train_start_time
+        # row = {
+        #     "epoch": epoch,
+        #     "train": train_metrics,
+        #     "val": val_metrics,
+        # }
         row = {
             "epoch": epoch,
             "train": train_metrics,
             "val": val_metrics,
+            "time": {
+                "epoch_seconds": epoch_time,
+                "avg_epoch_seconds": avg_epoch_time,
+                "elapsed_seconds": elapsed_seconds,
+                "eta_seconds": eta_seconds,
+                "epoch_time": format_time(epoch_time),
+                "elapsed": format_time(elapsed_seconds),
+                "eta": format_time(eta_seconds),
+            },
         }
 
         with open(log_path, "a") as f:
             f.write(json.dumps(row) + "\n")
 
+        # print(
+        #     f"epoch {epoch:03d} | "
+        #     f"train loss {train_metrics['loss']:.6f} "
+        #     f"act {train_metrics['action']:.6f} "
+        #     f"state {train_metrics['state']:.6f} | "
+        #     f"val loss {val_metrics['loss']:.6f} "
+        #     f"act {val_metrics['action']:.6f} "
+        #     f"state {val_metrics['state']:.6f} | "
+        #     f"inst_max {val_metrics['phase_inst_max_prob']:.3f} "
+        #     f"inst_ent {val_metrics['phase_inst_entropy']:.3f} "
+        #     f"usage {val_metrics['phase_mean']}"
+        # )
         print(
-            f"epoch {epoch:03d} | "
+            f"epoch {epoch:03d}/{args.epochs:03d} | "
             f"train loss {train_metrics['loss']:.6f} "
             f"act {train_metrics['action']:.6f} "
             f"state {train_metrics['state']:.6f} | "
@@ -245,7 +301,10 @@ def main():
             f"state {val_metrics['state']:.6f} | "
             f"inst_max {val_metrics['phase_inst_max_prob']:.3f} "
             f"inst_ent {val_metrics['phase_inst_entropy']:.3f} "
-            f"usage {val_metrics['phase_mean']}"
+            f"usage {val_metrics['phase_mean']} | "
+            f"time {format_time(epoch_time)} "
+            f"elapsed {format_time(elapsed_seconds)} "
+            f"eta {format_time(eta_seconds)}"
         )
 
         ckpt = {

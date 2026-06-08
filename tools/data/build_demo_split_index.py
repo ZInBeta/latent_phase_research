@@ -23,6 +23,8 @@ def parse_args():
     parser.add_argument("--train-ratio", type=float, default=0.70)
     parser.add_argument("--val-ratio", type=float, default=0.15)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--expected-num-files", type=int, default=10)
+    parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
 
@@ -127,12 +129,35 @@ def main():
         raise ValueError("train_ratio + val_ratio must be < 1.0")
 
     data_dir = Path(args.data_dir)
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # out_dir = Path(args.out_dir)
+    # out_dir.mkdir(parents=True, exist_ok=True)
 
+    # hdf5_files = sorted(data_dir.glob("*.hdf5"))
+    out_dir = Path(args.out_dir)
+
+    if out_dir.exists() and not args.overwrite:
+        existing_files = [
+            "train_index.json",
+            "val_index.json",
+            "test_index.json",
+            "config.json",
+        ]
+        if any((out_dir / name).exists() for name in existing_files):
+            raise FileExistsError(
+                f"Output dir already has split files: {out_dir}. "
+                f"Use --overwrite if you really want to regenerate it."
+            )
+    
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
     hdf5_files = sorted(data_dir.glob("*.hdf5"))
-    if len(hdf5_files) == 0:
-        raise FileNotFoundError(f"No .hdf5 files found in {data_dir}")
+    if len(hdf5_files) != args.expected_num_files:
+        raise ValueError(
+            f"Expected {args.expected_num_files} hdf5 files, "
+            f"but found {len(hdf5_files)} in {data_dir}"
+        )
+    # if len(hdf5_files) == 0:
+    #     raise FileNotFoundError(f"No .hdf5 files found in {data_dir}")
 
     demo_records = []
 
